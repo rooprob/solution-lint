@@ -1,3 +1,4 @@
+require 'solution-lint/optparser'
 
 # Internal: The logic of the solution-lint bin script, contained in a class for
 # ease of testing.
@@ -18,6 +19,26 @@ class SolutionLint::Bin
   #
   # Returns an Integer exit code to be passed back to the shell.
   def run
+    opts = SolutionLint::OptParser.build
+
+    begin
+      opts.parse!(@args)
+    rescue OptionParser::InvalidOption
+      puts "solution-lint: #{$!.message}"
+      puts "solution-lint: try 'solution-lint --help' for more information"
+      return 1
+    end
+
+    if SolutionLint.configuration.display_version
+      puts "solution-lint #{SolutionLint::VERSION}"
+      return 0
+    end
+
+    if @args[0].nil?
+      puts "solution-lint: no file specified"
+      puts "solution-lint: try 'solution-lint --help' for more information"
+      return 1
+    end
 
     begin
       path = @args[0]

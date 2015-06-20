@@ -3,7 +3,7 @@ require 'set'
 
 # Public: A singleton class storing all the information about the manifest
 # being analysed.
-class PuppetLint::Data
+class SolutionLint::Data
   include Singleton
 
   class << self
@@ -11,12 +11,12 @@ class PuppetLint::Data
     # checked.
     attr_reader :path, :fullpath, :filename
 
-    # Internal: Get/Set the raw manifest data, split by \n.
-    attr_accessor :manifest_lines
+    # Internal: Get/Set the dataset, read by YAML
+    attr_accessor :dataset
 
     # Internal: Store the tokenised manifest.
     #
-    # tokens - The Array of PuppetLint::Lexer::Token objects to store.
+    # tokens - The Array of SolutionLint::Lexer::Token objects to store.
     #
     # Returns nothing.
     def tokens=(tokens)
@@ -33,7 +33,7 @@ class PuppetLint::Data
 
     # Public: Get the tokenised manifest.
     #
-    # Returns an Array of PuppetLint::Lexer::Token objects.
+    # Returns an Array of SolutionLint::Lexer::Token objects.
     def tokens
       calling_method = begin
         caller[0][/`.*'/][1..-2]
@@ -67,7 +67,7 @@ class PuppetLint::Data
 
     # Internal: Retrieve a list of tokens that represent resource titles
     #
-    # Returns an Array of PuppetLint::Lexer::Token objects.
+    # Returns an Array of SolutionLint::Lexer::Token objects.
     def title_tokens
       @title_tokens ||= Proc.new do
         result = []
@@ -297,7 +297,7 @@ class PuppetLint::Data
                 :start  => token_idx,
                 :end    => real_idx,
                 :tokens => tokens[token_idx..real_idx],
-              }         
+              }
           end
         end
         functions
@@ -414,10 +414,10 @@ class PuppetLint::Data
     # Internal: Finds all the tokens that make up the defined type or class
     # definition parameters.
     #
-    # these_tokens - An Array of PuppetLint::Lexer::Token objects that make up
+    # these_tokens - An Array of SolutionLint::Lexer::Token objects that make up
     #                the defined type or class definition.
     #
-    # Returns an Array of PuppetLint::Lexer::Token objects or nil if it takes
+    # Returns an Array of SolutionLint::Lexer::Token objects or nil if it takes
     # no parameters.
     def param_tokens(these_tokens)
       depth = 0
@@ -452,7 +452,7 @@ class PuppetLint::Data
     #
     # Returns an Array of Symbols.
     def formatting_tokens
-      @formatting_tokens ||= PuppetLint::Lexer::FORMATTING_TOKENS
+      @formatting_tokens ||= SolutionLint::Lexer::FORMATTING_TOKENS
     end
 
     # Internal: Retrieves a Hash of Sets. Each key is a check name Symbol and

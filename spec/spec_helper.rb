@@ -2,6 +2,18 @@ require 'solution-lint'
 require 'rspec/its'
 require 'rspec/collection_matchers'
 
+def fixtures_path
+  File.expand_path(File.join( File.dirname(__FILE__), 'fixtures'))
+end
+
+def valid_file_path
+  File.expand_path( File.join(fixtures_path, 'test', 'valid.yaml'))
+end
+
+def fail_file_path
+  File.expand_path( File.join(fixtures_path, 'test', 'fail.yaml'))
+end
+
 module RSpec
   module LintExampleGroup
     class HaveProblem
@@ -114,6 +126,10 @@ module RSpec
 end
 
 RSpec.configure do |config|
+  config.color = true
+  config.tty = true
+  config.formatter = :documentation # :progress, :html, :textmate
+
   config.mock_framework = :rspec
   config.include RSpec::LintExampleGroup, {
     :type      => :lint,

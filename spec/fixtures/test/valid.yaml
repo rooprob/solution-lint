@@ -1,2 +1,7 @@
 ---
-  valid: key
+  valid:key:
+    variables:
+      setting1: foobar
+      setting2: foobar
+      setting3: foobar
+      setting4: foobar

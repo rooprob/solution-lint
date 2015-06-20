@@ -1,4 +1,5 @@
 require 'solution-lint/checkplugin'
+require 'yaml'
 
 # Internal: Various methods that orchestrate the actions of the solution-lint
 # check plugins.
@@ -9,6 +10,30 @@ class SolutionLint::Checks
   # Public: Initialise a new SolutionLint::Checks object.
   def initialize
     @problems = []
+  end
+
+  # Internal: Tokenise the manifest code and prepare it for checking.
+  #
+  # path    - The path to the file as passed to puppet-lint as a String.
+  # content - The data to be loaded and checked.
+  #
+  # Returns nothing.
+  def load_data(path, content)
+    SolutionLint::Data.path = path
+    begin
+      SolutionLint::Data.dataset = YAML.load(content)
+    rescue Psych::SyntaxError => e
+      problems << {
+        :kind     => :error,
+        :check    => :syntax,
+        :message  => e,
+        :line     => e.line,
+        :column   => e.column,
+        :fullpath => SolutionLint::Data.fullpath,
+        :path     => SolutionLint::Data.path,
+        :filename => SolutionLint::Data.filename,
+      }
+    end
   end
 
   # Internal: Run the lint checks over the manifest code.
@@ -22,10 +47,10 @@ class SolutionLint::Checks
   #
   # Returns an Array of problem Hashes.
   def run(fileinfo, data)
-    puts "running checks: #{enabled_checks}"
+    load_data(fileinfo, data)
+
     checks_run = []
     enabled_checks.each do |check|
-      puts "enabled check: #{check}"
       klass = SolutionLint.configuration.check_object[check].new
       problems = klass.run
 
@@ -49,7 +74,6 @@ class SolutionLint::Checks
   def enabled_checks
     @enabled_checks ||= Proc.new do
       SolutionLint.configuration.checks.select { |check|
-        puts "checking check #{check}"
         SolutionLint.configuration.send("#{check}_enabled?")
       }
     end.call

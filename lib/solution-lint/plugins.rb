@@ -62,5 +62,6 @@ class SolutionLint
 end
 
 require 'solution-lint/plugins/check_dummy'
+require 'solution-lint/plugins/check_variables'
 
 SolutionLint::Plugins.load_from_gems

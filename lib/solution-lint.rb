@@ -1,9 +1,9 @@
 require 'set'
 require 'solution-lint/version'
+require 'solution-lint/bin'
 require 'solution-lint/checks'
 require 'solution-lint/configuration'
-require 'solution-lint/bin'
-require 'yaml'
+require 'solution-lint/data'
 
 class SolutionLint::NoCodeError < StandardError; end
 class SolutionLint::NoFix < StandardError; end
@@ -11,7 +11,8 @@ class SolutionLint::NoFix < StandardError; end
 # Public: The public interface to solution-lint.
 class SolutionLint
   # Public: Gets/Sets the YAML dataset to be checked.
-  attr_accessor :code
+  attr_accessor :dataset
+  attr_accessor :content
 
   # Public: Returns an Array of Hashes describing the problems found in the
   # manifest.
@@ -40,7 +41,8 @@ class SolutionLint
 
   # Public: Initialise a new SolutionLint object.
   def initialize
-    @code = nil
+    @dataset = nil
+    @content = nil
     @statistics = {:error => 0, :warning => 0, :fixed => 0, :ignored => 0}
     @manifest = ''
   end
@@ -59,17 +61,15 @@ class SolutionLint
     self.class.configuration
   end
 
-
-  # Public: Set the path of the manifest file to be tested and read the
-  # contents of the file.
+  # Public: Set the path of the file to be tested, read the content as plain
+  # text. Loading via YAML takes place in Checks, so that error reporting can
+  # take place.
   #
   # Returns nothing.
   def file=(path)
     if File.exist? path
       @path = path
-      @file = File.read(path)
-      puts "loading file #{@file}"
-      @code = YAML.load(@file)
+      @content = File.read(path)
     end
   end
 
@@ -88,11 +88,27 @@ class SolutionLint
   #
   # Returns nothing.
   def format_message(message)
-    format = @log_format
+    format = log_format
     puts format % message
     if message[:kind] == :ignored && !message[:reason].nil?
       puts "  #{message[:reason]}"
     end
+  end
+
+  def find_context_from_token!(message)
+    return if message[:line] > -1
+    return if message[:column] > -1
+    return unless message[:token]
+
+    # XXX move into SolutionLint::Data
+    content_arr = @content.split("\n")
+    content_arr.each_with_index { |line, idx|
+      column = line.index(message[:token])
+      if column
+        message[:line] = idx + 1
+        message[:column] = column + 1
+      end
+    }
   end
 
   # Internal: Print out the line of the manifest on which the problem was found
@@ -104,7 +120,7 @@ class SolutionLint
   def print_context(message)
     return if message[:check] == 'documentation'
     return if message[:kind] == :fixed
-    line = @file.split("\n")[message[:line] - 1]
+    line = @content.split("\n")[message[:line] - 1]
     offset = line.index(/\S/) || 1
     puts "\n  #{line.strip}"
     printf "%#{message[:column] + 2 - offset}s\n\n", '^'
@@ -118,6 +134,7 @@ class SolutionLint
   # Returns nothing.
   def report(problems)
     problems.each do |message|
+      find_context_from_token!(message)
 
       message[:KIND] = message[:kind].to_s.upcase
       message[:linenumber] = message[:line]
@@ -141,25 +158,24 @@ class SolutionLint
     @statistics[:warning] != 0
   end
 
-  # Public: Run the loaded manifest code through the lint checks and print the
+  # Public: Run the loaded file through the lint checks and print the
   # results of the checks to stdout.
   #
   # Returns nothing.
-  # Raises SolutionLint::NoCodeError if no manifest code has been loaded.
+  # Raises SolutionLint::NoCodeError if no file has been loaded.
   def run
-    if @code.nil?
+    if @content.nil?
       raise SolutionLint::NoCodeError
     end
 
-    if @code.empty?
+    if @content.empty?
       @problems = []
       @manifest = []
       return
     end
 
-    puts "kicking off a new"
     linter = SolutionLint::Checks.new
-    @problems = linter.run(@path, @code)
+    @problems = linter.run(@path, @content)
     @problems.each { |problem| @statistics[problem[:kind]] += 1 }
 
   end

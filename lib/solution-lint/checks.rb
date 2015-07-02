@@ -22,13 +22,29 @@ class SolutionLint::Checks
     SolutionLint::Data.path = path
     begin
       SolutionLint::Data.dataset = YAML.load(content)
+
     rescue Psych::SyntaxError => e
+      SolutionLint::Data.failed = true
       @problems << {
         :kind     => :error,
         :check    => :syntax,
         :message  => e,
         :line     => e.line,
         :column   => e.column,
+        :fullpath => SolutionLint::Data.fullpath,
+        :path     => SolutionLint::Data.path,
+        :filename => SolutionLint::Data.filename,
+      }
+    end
+
+    if SolutionLint::Data.dataset.nil? || SolutionLint::Data.dataset.empty?
+      SolutionLint::Data.failed = true
+      @problems << {
+        :kind     => :error,
+        :check    => :syntax,
+        :message  => 'Empty dataset',
+        :line     => 1,
+        :column   => 1,
         :fullpath => SolutionLint::Data.fullpath,
         :path     => SolutionLint::Data.path,
         :filename => SolutionLint::Data.filename,
@@ -49,35 +65,37 @@ class SolutionLint::Checks
   def run(fileinfo, data)
     load_data(fileinfo, data)
 
-    checks_run = []
-    enabled_checks.each do |check|
+    unless SolutionLint::Data.failed
+      checks_run = []
+      enabled_checks.each do |check|
 
-      begin
-        klass = SolutionLint.configuration.check_object[check].new
-        problems = klass.run
+        begin
+          klass = SolutionLint.configuration.check_object[check].new
+          problems = klass.run
 
-        if SolutionLint.configuration.fix
-          checks_run << klass
-        else
-          @problems.concat(problems)
+          if SolutionLint.configuration.fix
+            checks_run << klass
+          else
+            @problems.concat(problems)
+          end
+
+        rescue NoMethodError => e
+          @problems << {
+            :kind     => :error,
+            :check    => :syntax,
+            :message  => e,
+            :line     => 1,
+            :column   => 1,
+            :fullpath => SolutionLint::Data.fullpath,
+            :path     => SolutionLint::Data.path,
+            :filename => SolutionLint::Data.filename,
+          }
         end
-
-      rescue NoMethodError => e
-        @problems << {
-          :kind     => :error,
-          :check    => :syntax,
-          :message  => e,
-          :line     => 1,
-          :column   => 1,
-          :fullpath => SolutionLint::Data.fullpath,
-          :path     => SolutionLint::Data.path,
-          :filename => SolutionLint::Data.filename,
-        }
       end
-    end
 
-    checks_run.each do |check|
-      @problems.concat(check.fix_problems)
+      checks_run.each do |check|
+        @problems.concat(check.fix_problems)
+      end
     end
 
     @problems

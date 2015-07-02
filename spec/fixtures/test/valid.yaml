@@ -1,7 +1,20 @@
 ---
   valid:key:
-    variables:
-      setting1: foobar
-      setting2: foobar
-      setting3: foobar
-      setting4: foobar
+    another: [1,2,3,4]
+
+  variables:
+    setting1: foobar
+    setting2: foobar
+    setting3: foobar
+    setting4: foobar
+
+  environment:
+    more: values
+    secret: '%{hiera(''important'')}'
+
+  classes:
+    - one
+    - two
+
+
+  important: a secret

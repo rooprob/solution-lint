@@ -13,6 +13,7 @@ class SolutionLint::Data
 
     # Internal: Get/Set the dataset, read by YAML
     attr_accessor :dataset
+    attr_accessor :failed
 
     # Internal: Store the tokenised manifest.
     #
@@ -29,6 +30,7 @@ class SolutionLint::Data
       @array_indexes = nil
       @hash_indexes = nil
       @defaults_indexes = nil
+      @failed = false
     end
 
     # Public: Get the tokenised manifest.

@@ -1,6 +1,7 @@
 require 'singleton'
 require 'set'
 require 'yaml'
+require 'solution-lint/tree'
 
 # Public: A singleton class storing all the information about the manifest
 # being analysed.
@@ -14,6 +15,7 @@ class SolutionLint::Data
 
     # Internal: Get/Set the dataset, read by YAML
     attr_accessor :dataset
+    attr_accessor :datatree
     attr_accessor :failed
     attr_accessor :problems
 
@@ -22,6 +24,7 @@ class SolutionLint::Data
       @failed = false
       begin
         @dataset = YAML.load(content)
+        @datatree = SolutionLint::Tree.new(dataset)
       rescue Psych::SyntaxError => e
         @failed = true
         @problems << {

@@ -1,5 +1,6 @@
 require 'singleton'
 require 'set'
+require 'yaml'
 
 # Public: A singleton class storing all the information about the manifest
 # being analysed.
@@ -14,7 +15,42 @@ class SolutionLint::Data
     # Internal: Get/Set the dataset, read by YAML
     attr_accessor :dataset
     attr_accessor :failed
+    attr_accessor :problems
 
+    def dataset=(content)
+      @problems = []
+      @failed = false
+      begin
+        @dataset = YAML.load(content)
+      rescue Psych::SyntaxError => e
+        @failed = true
+        @problems << {
+          :kind     => :error,
+          :check    => :syntax,
+          :message  => e,
+          :line     => e.line,
+          :column   => e.column,
+          :fullpath => @fullpath,
+          :path     => @path,
+          :filename => @filename,
+        }
+      end
+
+      if @dataset.nil? || @dataset.empty?
+        @failed = true
+        @problems << {
+          :kind     => :error,
+          :check    => :syntax,
+          :message  => 'Empty dataset',
+          :line     => 1,
+          :column   => 1,
+          :fullpath => @fullpath,
+          :path     => @path,
+          :filename => @filename,
+        }
+      end
+      @failed
+    end
     # Internal: Store the tokenised manifest.
     #
     # tokens - The Array of SolutionLint::Lexer::Token objects to store.
@@ -30,7 +66,6 @@ class SolutionLint::Data
       @array_indexes = nil
       @hash_indexes = nil
       @defaults_indexes = nil
-      @failed = false
     end
 
     # Public: Get the tokenised manifest.

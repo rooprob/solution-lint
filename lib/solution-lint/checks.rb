@@ -1,5 +1,4 @@
 require 'solution-lint/checkplugin'
-require 'yaml'
 
 # Internal: Various methods that orchestrate the actions of the solution-lint
 # check plugins.
@@ -12,44 +11,18 @@ class SolutionLint::Checks
     @problems = []
   end
 
-  # Internal: Tokenise the manifest code and prepare it for checking.
+  # Internal: Load the file content and prepare it for checking.
   #
   # path    - The path to the file as passed to puppet-lint as a String.
   # content - The data to be loaded and checked.
   #
-  # Returns nothing.
+  # Returns a list of problems (or empty [] if none)
   def load_data(path, content)
     SolutionLint::Data.path = path
-    begin
-      SolutionLint::Data.dataset = YAML.load(content)
+    SolutionLint::Data.dataset = content
 
-    rescue Psych::SyntaxError => e
-      SolutionLint::Data.failed = true
-      @problems << {
-        :kind     => :error,
-        :check    => :syntax,
-        :message  => e,
-        :line     => e.line,
-        :column   => e.column,
-        :fullpath => SolutionLint::Data.fullpath,
-        :path     => SolutionLint::Data.path,
-        :filename => SolutionLint::Data.filename,
-      }
-    end
-
-    if SolutionLint::Data.dataset.nil? || SolutionLint::Data.dataset.empty?
-      SolutionLint::Data.failed = true
-      @problems << {
-        :kind     => :error,
-        :check    => :syntax,
-        :message  => 'Empty dataset',
-        :line     => 1,
-        :column   => 1,
-        :fullpath => SolutionLint::Data.fullpath,
-        :path     => SolutionLint::Data.path,
-        :filename => SolutionLint::Data.filename,
-      }
-    end
+    # capture any issues from loading
+    SolutionLint::Data.problems
   end
 
   # Internal: Run the lint checks over the manifest code.
@@ -63,7 +36,7 @@ class SolutionLint::Checks
   #
   # Returns an Array of problem Hashes.
   def run(fileinfo, data)
-    load_data(fileinfo, data)
+    @problems = load_data(fileinfo, data)
 
     unless SolutionLint::Data.failed
       checks_run = []

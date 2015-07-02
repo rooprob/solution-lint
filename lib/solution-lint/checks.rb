@@ -23,7 +23,7 @@ class SolutionLint::Checks
     begin
       SolutionLint::Data.dataset = YAML.load(content)
     rescue Psych::SyntaxError => e
-      problems << {
+      @problems << {
         :kind     => :error,
         :check    => :syntax,
         :message  => e,
@@ -51,13 +51,28 @@ class SolutionLint::Checks
 
     checks_run = []
     enabled_checks.each do |check|
-      klass = SolutionLint.configuration.check_object[check].new
-      problems = klass.run
 
-      if SolutionLint.configuration.fix
-        checks_run << klass
-      else
-        @problems.concat(problems)
+      begin
+        klass = SolutionLint.configuration.check_object[check].new
+        problems = klass.run
+
+        if SolutionLint.configuration.fix
+          checks_run << klass
+        else
+          @problems.concat(problems)
+        end
+
+      rescue NoMethodError => e
+        @problems << {
+          :kind     => :error,
+          :check    => :syntax,
+          :message  => e,
+          :line     => 1,
+          :column   => 1,
+          :fullpath => SolutionLint::Data.fullpath,
+          :path     => SolutionLint::Data.path,
+          :filename => SolutionLint::Data.filename,
+        }
       end
     end
 

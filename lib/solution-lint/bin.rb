@@ -48,19 +48,24 @@ class SolutionLint::Bin
         path = @args
       end
 
+      if path.length > 1
+        SolutionLint.configuration.with_filename = true
+      end
+
       return_val = 0
       path.each do |f|
         l = SolutionLint.new
         l.file = f
         l.run
         l.print_problems
+
         if l.errors? or l.warnings?
           return_val = 1
         end
       end
       return return_val
 
-    rescue SolutionLint::NoCodeError
+    rescue SolutionLint::NoCodeError => e
       puts "solution-lint: no file specified or specified file does not exist"
       puts "solution-lint: try 'solution-lint --help' for more information"
       return 1

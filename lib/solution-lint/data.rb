@@ -30,23 +30,9 @@ class SolutionLint::Data
         @problems << {
           :kind     => :error,
           :check    => :syntax,
-          :message  => e,
+          :message  => "Syntax error #{e}",
           :line     => e.line,
           :column   => e.column,
-          :fullpath => @fullpath,
-          :path     => @path,
-          :filename => @filename,
-        }
-      end
-
-      if @dataset.nil? || @dataset.empty?
-        @failed = true
-        @problems << {
-          :kind     => :error,
-          :check    => :syntax,
-          :message  => 'Empty dataset',
-          :line     => 1,
-          :column   => 1,
           :fullpath => @fullpath,
           :path     => @path,
           :filename => @filename,

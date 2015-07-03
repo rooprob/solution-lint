@@ -79,7 +79,14 @@ class SolutionLint
   #
   # Returns a format String to be used with String#%.
   def log_format
-    @log_format = '%{KIND}: %{message} on line %{line}'
+    if configuration.log_format == ''
+      format = '%{KIND}: %{message} on line %{line}'
+      if configuration.with_filename
+        format.prepend '%{path} - '
+      end
+      configuration.log_format = format
+    end
+    return configuration.log_format
   end
 
   # Internal: Format a problem message and print it to STDOUT.
@@ -139,8 +146,10 @@ class SolutionLint
       message[:KIND] = message[:kind].to_s.upcase
       message[:linenumber] = message[:line]
 
-      format_message message
-      print_context(message)
+      if message[:kind] == :fixed || [message[:kind], :all].include?(configuration.error_level)
+        format_message message
+        print_context(message) if configuration.with_context
+      end
     end
   end
 

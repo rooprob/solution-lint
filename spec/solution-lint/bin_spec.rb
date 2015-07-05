@@ -112,10 +112,10 @@ describe SolutionLint::Bin do
 
     its(:exitstatus) { is_expected.to eq(1) }
     its(:stdout) { is_expected.to eq([
-      'ERROR: Syntax error (<unknown>): found unexpected \':\' while scanning a plain scalar at line 2 column 21 on line 2',
+      'ERROR: Syntax error (malformed.yaml): did not find expected \',\' or \']\' while parsing a flow sequence at line 2 column 13 on line 2',
       '',
-      "  :test_key: [ one, two three",
-      '                    ^',
+      "  test_key: [ one, two three",
+      '            ^',
     ].join("\n"))
     }
   end
@@ -252,7 +252,7 @@ describe SolutionLint::Bin do
       ] }
 
       its(:exitstatus) { is_expected.to eq(1) }
-      its(:stdout) { is_expected.to eq('Syntax error (<unknown>): could not find expected \':\' while scanning a simple key at line 3 column 3') }
+      its(:stdout) { is_expected.to eq('Syntax error (fail.yaml): could not find expected \':\' while scanning a simple key at line 3 column 3') }
     end
   end
 

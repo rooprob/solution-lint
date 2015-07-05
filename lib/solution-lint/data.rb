@@ -23,7 +23,7 @@ class SolutionLint::Data
       @problems = []
       @failed = false
       begin
-        @dataset = YAML.load(content)
+        @dataset = YAML.load(content, @filename)
         @datatree = SolutionLint::Tree.new(dataset)
       rescue Psych::SyntaxError => e
         @failed = true
